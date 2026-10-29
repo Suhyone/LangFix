@@ -1,33 +1,37 @@
 # LangFix
 
-Windows tray tool that fixes text typed with the wrong keyboard language (Thai ⇄ English, Kedmanee layout).
+โปรแกรมเล็ก ๆ บน Windows ที่แก้ข้อความที่พิมพ์ผิดภาษา (ไทย ⇄ อังกฤษ) ตามผังแป้นพิมพ์ไทยแบบ Kedmanee
 
-Typed `.s,jmujf^l;p'k,` while the keyboard was in English? Press **Ctrl+Shift+Space** and it becomes `ใหม่ที่ดูสวยงาม`, then the keyboard layout switches so you can keep typing.
+พิมพ์ `.s,jmujf^l;p'k,` ตอนแป้นเป็นภาษาอังกฤษ แต่ตั้งใจจะพิมพ์ "ใหม่ที่ดูสวยงาม" แค่กด **Ctrl+Shift+Space** ข้อความจะถูกแก้ให้ แล้วโปรแกรมสลับภาษาแป้นพิมพ์ให้ด้วย พิมพ์ต่อได้ทันที
 
-## Use
+## วิธีใช้
 
-1. Run `LangFix.exe`. It sits in the system tray (right-click → Exit to quit).
-2. Typed in the wrong language? Press **Ctrl+Shift+Space**.
-   - Nothing selected: the last space-delimited word before the caret is converted (spaces after it are kept).
-   - Text selected (and nothing typed since the last click/Enter): only the selection is converted.
+1. เปิดไฟล์ `LangFix.exe` โปรแกรมจะไปอยู่ที่ไอคอนในถาดระบบ (คลิกขวา → Exit เพื่อปิด)
+2. เมื่อพิมพ์ผิดภาษา ให้กด **Ctrl+Shift+Space**
+   - **ไม่ได้เลือกข้อความ:** แปลง "คำสุดท้ายก่อนเคอร์เซอร์" โดยนับขอบเขตคำจากช่องว่าง ถ้ามีช่องว่างต่อท้ายคำ จะเก็บช่องว่างไว้ตามเดิม
+   - **เลือกข้อความไว้:** แปลงเฉพาะส่วนที่เลือก (ใช้เมื่อยังไม่ได้พิมพ์อะไรต่อหลังคลิก กด Enter หรือกดปุ่มลัดอื่น)
+3. ถ้าข้อความมีตัวอักษรไทย จะแปลงเป็นอังกฤษ ถ้าไม่มี จะแปลงเป็นไทย
 
-It never converts on its own, so passwords are only touched if you press the hotkey.
+โปรแกรมไม่แปลงเองโดยอัตโนมัติ จะทำงานก็ต่อเมื่อคุณกดปุ่มลัดเท่านั้น จึงไม่ยุ่งกับช่องรหัสผ่านถ้าคุณไม่กด
 
-## How it works
+## การทำงานภายใน
 
-- A low-level keyboard hook remembers only the current word in memory (physical keys and which layout was active). Nothing is written to disk or sent anywhere.
-- The fix is Backspace + retype, so the clipboard is not used in word mode.
-- Selection mode copies with Ctrl+C using plain Win32 clipboard calls and puts the clipboard back afterwards.
-- `%LOCALAPPDATA%\LangFix\log.txt` holds content-free diagnostics (key counts and layout ids, never the typed characters).
+- ใช้ keyboard hook จำเฉพาะ **คำปัจจุบัน** ไว้ในหน่วยความจำ (ปุ่มที่กดและภาษาของแป้นพิมพ์ตอนนั้น) ไม่เขียนลงไฟล์และไม่ส่งไปไหน
+- ถ้าพิมพ์สลับภาษากลางคำ จะแปลงเฉพาะช่วงท้ายที่พิมพ์ด้วยภาษาเดียวกัน
+- วิธีแก้คือกด Backspace แล้วพิมพ์ข้อความที่ถูกลงไปใหม่ จึงไม่ต้องผ่านคลิปบอร์ดและเร็วมาก (ราว 50–100 มิลลิวินาที)
+- โหมดเลือกข้อความคัดลอกด้วย Ctrl+C ผ่าน Win32 โดยตรง แล้วคืนค่าเดิมให้คลิปบอร์ดหลังแปลงเสร็จ (คืนได้เฉพาะข้อความ ถ้าในคลิปบอร์ดเป็นรูปหรือไฟล์ จะไม่ถูกคืน)
+- ไฟล์ `%LOCALAPPDATA%\LangFix\log.txt` เก็บบันทึกไว้ตรวจปัญหา มีแค่จำนวนปุ่มและรหัสภาษา ไม่เก็บตัวอักษรที่พิมพ์
 
-## Limits
+## ข้อจำกัด
 
-- Programs running as administrator don't deliver keystrokes to a normal-privilege hook.
-- Some editors copy the whole line on Ctrl+C with no selection; selection mode may then convert that line.
+- โปรแกรมที่เปิดแบบ Run as administrator จะไม่ส่งการกดแป้นมาให้โปรแกรมนี้ ถ้าไม่ได้เปิด LangFix ด้วยสิทธิ์เดียวกัน
+- บางโปรแกรม (เช่น VS Code) คัดลอกทั้งบรรทัดเมื่อกด Ctrl+C โดยไม่เลือกอะไร โหมดเลือกข้อความจึงอาจแปลงทั้งบรรทัดในกรณีนั้น
+- โปรแกรมยังไม่เปิดเองตอนเปิดเครื่อง
+- รองรับเฉพาะผัง Kedmanee
 
-## Build
+## คอมไพล์เอง
 
-Needs only the .NET Framework compiler that ships with Windows:
+ใช้ตัวคอมไพเลอร์ .NET Framework ที่มากับ Windows ไม่ต้องติดตั้งอะไรเพิ่ม:
 
 ```powershell
 & "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /codepage:65001 /platform:x64 /target:winexe /win32icon:LangFix.ico /out:LangFix.exe /r:System.Windows.Forms.dll /r:System.Drawing.dll LangFix.cs
